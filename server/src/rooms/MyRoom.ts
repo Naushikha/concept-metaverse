@@ -80,7 +80,7 @@ export class MyRoom extends Room<MyRoomState> {
   }
 
   onJoin(client: Client, options: { username: string; color: string }) {
-    console.log(client.sessionId, "joined!");
+    console.log(`${options.username} [id:${client.sessionId}] joined!`);
 
     const player = new Player();
     player.id = client.sessionId;
@@ -95,7 +95,12 @@ export class MyRoom extends Room<MyRoomState> {
   }
 
   onLeave(client: Client, consented: boolean) {
-    console.log(client.sessionId, "left!");
+    console.log(
+      `${this.state.players.get(client.sessionId).username} [id:${
+        client.sessionId
+      }] left!`
+    );
+
     this.state.players.delete(client.sessionId);
   }
 
