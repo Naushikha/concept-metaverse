@@ -55,6 +55,14 @@ export class MyRoom extends Room<MyRoomState> {
       }
     );
 
+    this.onMessage("rotate", (client, data: { rotationY: number }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.rotationY = data.rotationY;
+        // Colyseus automatically synchronizes changes to schema properties
+      }
+    });
+
     // this.onMessage(
     //   "playerJoined",
     //   (client, data: { username: string; color: string }) => {

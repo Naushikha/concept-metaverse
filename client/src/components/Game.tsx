@@ -3,6 +3,8 @@ import { Billboard, OrbitControls, Text } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import { useGameStore, type Player } from "../utils/store";
 import * as THREE from "three";
+import ThirdPersonCamera from "./ThirdPersonCamera";
+import { usePointerLock } from "./usePointerLock";
 
 declare global {
   interface Window {
@@ -51,39 +53,59 @@ function Player({ player }: { player: Player }) {
 function MyPlayerController({ room }: { room: any }) {
   const myId = useGameStore((s) => s.myId);
   const players = useGameStore((s) => s.players);
-  // get initial position and rotation from the player's state
   const initialPlayer = players[myId];
-  const [pos, setPos] = useState([
+
+  const [pos, setPos] = useState<[number, number, number]>([
     initialPlayer.position[0],
     initialPlayer.position[1],
     initialPlayer.position[2],
   ]);
-  const [rotY, setRotY] = useState(0);
+  const [rotationY, setRotationY] = useState(initialPlayer.rotationY || 0);
 
-  useFrame((_, delta) => {
-    const keys = {
-      forward: window.keyState["w"],
-      backward: window.keyState["s"],
-      left: window.keyState["a"],
-      right: window.keyState["d"],
+  const vel = useRef(new THREE.Vector3());
+
+  // Mouse rotation
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setRotationY((prev) => {
+        const newRot = prev - e.movementX * 0.002;
+        room.send("rotate", { rotationY: newRot });
+        return newRot;
+      });
     };
 
-    let dx = 0,
-      dz = 0;
-    if (keys.forward) dz -= 1;
-    if (keys.backward) dz += 1;
-    if (keys.left) dx -= 1;
-    if (keys.right) dx += 1;
+    document.addEventListener("mousemove", handleMouseMove);
+    return () => document.removeEventListener("mousemove", handleMouseMove);
+  }, [room]);
 
-    const speed = 5 * delta;
-    const angle = Math.atan2(dx, dz);
+  useFrame((_, delta) => {
+    const keys = window.keyState || {};
+    const moveSpeed = 5;
+    const moveVec = new THREE.Vector3();
 
-    if (dx !== 0 || dz !== 0) {
-      const newX = pos[0] + Math.sin(angle) * speed;
-      const newZ = pos[2] + Math.cos(angle) * speed;
-      setPos([newX, pos[1], newZ]);
-      setRotY(angle);
-      room.send("move", { x: newX, y: pos[1], z: newZ, rotationY: angle });
+    if (keys["w"]) moveVec.z += 1;
+    if (keys["s"]) moveVec.z -= 1;
+    if (keys["a"]) moveVec.x += 1;
+    if (keys["d"]) moveVec.x -= 1;
+
+    // Normalize and rotate moveVec based on player rotation
+    if (moveVec.lengthSq() > 0) {
+      moveVec.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
+      vel.current.copy(moveVec).multiplyScalar(moveSpeed * delta);
+
+      const newPos = [
+        pos[0] + vel.current.x,
+        pos[1],
+        pos[2] + vel.current.z,
+      ] as [number, number, number];
+
+      setPos(newPos);
+      room.send("move", {
+        x: newPos[0],
+        y: newPos[1],
+        z: newPos[2],
+        rotationY,
+      });
     }
   });
 
@@ -93,8 +115,8 @@ function MyPlayerController({ room }: { room: any }) {
     <Player
       player={{
         ...players[myId],
-        position: pos as [number, number, number],
-        rotationY: rotY,
+        position: pos,
+        rotationY,
       }}
     />
   );
@@ -103,6 +125,10 @@ function MyPlayerController({ room }: { room: any }) {
 function Game() {
   const players = useGameStore((s) => s.players);
   const room = useGameStore((s) => s.room);
+  const myId = useGameStore((s) => s.myId);
+  const canvasRef = useRef<HTMLCanvasElement>(null!);
+
+  usePointerLock(canvasRef); // lock on click
 
   useEffect(() => {
     const keyState: Record<string, boolean> = {};
@@ -118,7 +144,7 @@ function Game() {
   }, []);
 
   return (
-    <Canvas camera={{ position: [0, 5, 10], fov: 60 }}>
+    <Canvas ref={canvasRef} camera={{ position: [0, 5, 10], fov: 60 }}>
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
       {room && <MyPlayerController room={room} />}
@@ -126,7 +152,12 @@ function Game() {
         <Player key={p.id} player={p} />
       ))}
       <gridHelper args={[100, 100]} />
-      <OrbitControls />
+      {myId && players[myId] && (
+        <ThirdPersonCamera
+          playerPos={players[myId].position}
+          playerRotY={players[myId].rotationY}
+        />
+      )}
     </Canvas>
   );
 }

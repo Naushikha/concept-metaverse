@@ -1,0 +1,73 @@
+import { useEffect, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+
+type Props = {
+  playerPos: [number, number, number];
+  playerRotY: number;
+};
+
+export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
+  const { camera } = useThree();
+  const pitchRef = useRef(0); // vertical angle
+  const isPointerLocked = useRef(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isPointerLocked.current) return;
+
+      pitchRef.current += e.movementY * 0.002;
+      // Clamp the pitch so camera doesn't flip (e.g., -45° to 45°)
+      pitchRef.current = Math.max(0.2, Math.min(Math.PI / 3, pitchRef.current));
+    };
+
+    const handlePointerLockChange = () => {
+      isPointerLocked.current = document.pointerLockElement !== null;
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("pointerlockchange", handlePointerLockChange);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener(
+        "pointerlockchange",
+        handlePointerLockChange
+      );
+    };
+  }, []);
+
+  useFrame(() => {
+    const target = new THREE.Vector3(...playerPos);
+    const distance = 6;
+    const height = 0; // base height, vertical offset is handled by pitch
+
+    // Camera offset based on yaw (playerRotY) and pitch
+    const horizontalOffset = new THREE.Vector3(
+      Math.sin(playerRotY) * -distance,
+      0,
+      Math.cos(playerRotY) * -distance
+    );
+
+    const verticalOffset = new THREE.Vector3(
+      0,
+      Math.sin(pitchRef.current) * distance,
+      0
+    );
+    const zoomFactor = Math.cos(pitchRef.current);
+
+    const totalOffset = horizontalOffset
+      .multiplyScalar(zoomFactor)
+      .add(verticalOffset)
+      .add(new THREE.Vector3(0, height, 0));
+
+    const desiredPosition = target.clone().add(totalOffset);
+
+    // Smooth follow
+    camera.position.lerp(desiredPosition, 0.1);
+
+    camera.lookAt(target);
+  });
+
+  return null;
+}
