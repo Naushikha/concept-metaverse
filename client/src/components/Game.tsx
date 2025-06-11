@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Billboard, OrbitControls, Text } from "@react-three/drei";
+import { Billboard, Text } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import { useGameStore, type Player } from "../utils/store";
 import * as THREE from "three";
@@ -14,11 +14,25 @@ declare global {
 
 function Player({ player }: { player: Player }) {
   const groupRef = useRef<THREE.Group>(null);
+  const targetPosition = useRef(new THREE.Vector3(...player.position));
+  const displayedPosition = useRef(new THREE.Vector3(...player.position));
+  const currentRotationY = useRef(player.rotationY);
+
+  // update target position when player updates
+  useEffect(() => {
+    targetPosition.current.set(...player.position);
+    currentRotationY.current = player.rotationY;
+  }, [player.position, player.rotationY]);
 
   useFrame(() => {
     if (groupRef.current) {
-      groupRef.current.position.set(...player.position);
-      groupRef.current.rotation.y = player.rotationY;
+      // Interpolate position
+      displayedPosition.current.lerp(targetPosition.current, 0.1);
+      groupRef.current.position.copy(displayedPosition.current);
+
+      // Smooth rotation (optional)
+      groupRef.current.rotation.y +=
+        (currentRotationY.current - groupRef.current.rotation.y) * 0.1;
     }
   });
 
@@ -148,9 +162,11 @@ function Game() {
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
       {room && <MyPlayerController room={room} />}
-      {Object.values(players).map((p) => (
-        <Player key={p.id} player={p} />
-      ))}
+      {Object.values(players)
+        .filter((p) => p.id !== myId)
+        .map((p) => (
+          <Player key={p.id} player={p} />
+        ))}
       <gridHelper args={[100, 100]} />
       {myId && players[myId] && (
         <ThirdPersonCamera
