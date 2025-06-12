@@ -72,16 +72,27 @@ export class MyRoom extends Room<MyRoomState> {
     player.z = Math.random() * 5 - 2.5;
     player.rotationY = 0;
 
+    const chatPayload = {
+      id: "SERVER",
+      name: "[Server]",
+      text: `'${player.username}' has joined the room! 🥳🎉`,
+    };
+    // Broadcast to all clients
+    this.broadcast("chat", chatPayload);
+
     this.state.players.set(client.sessionId, player);
   }
 
   onLeave(client: Client, consented: boolean) {
-    console.log(
-      `${this.state.players.get(client.sessionId).username} [id:${
-        client.sessionId
-      }] left!`
-    );
-
+    const playerUsername = this.state.players.get(client.sessionId).username;
+    console.log(`${playerUsername} [id:${client.sessionId}] left!`);
+    const chatPayload = {
+      id: "SERVER",
+      name: "[Server]",
+      text: `'${playerUsername}' has left the room! 🙁`,
+    };
+    // Broadcast to all clients
+    this.broadcast("chat", chatPayload);
     this.state.players.delete(client.sessionId);
   }
 
