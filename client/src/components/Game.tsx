@@ -1,5 +1,5 @@
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Billboard, Text } from "@react-three/drei";
+import { Billboard, RoundedBox, Text } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
 import { useGameStore, type Player } from "../utils/store";
 import * as THREE from "three";
@@ -42,18 +42,6 @@ function Player({ player }: { player: Player }) {
 
   return (
     <group ref={groupRef}>
-      {/* <mesh>
-        <cylinderGeometry args={[0.5, 0.5, 2]} />
-        <meshStandardMaterial color={player.color} />
-      </mesh>
-      <mesh position={[0, 1.1, 0]}>
-        <sphereGeometry args={[0.5]} />
-        <meshStandardMaterial color={player.color} />
-      </mesh>
-      <mesh position={[0, 1.1, 0.5]}>
-        <boxGeometry args={[0.5, 0.2, 0.2]} />
-        <meshStandardMaterial color="white" />
-      </mesh> */}
       {player.skin === "default-male" && (
         <PlayerModelMale actionName={player.state} topColor={player.color} />
       )}
@@ -61,13 +49,20 @@ function Player({ player }: { player: Player }) {
         <PlayerModelFemale actionName={player.state} topColor={player.color} />
       )}
 
-      <Billboard>
-        <Text
-          position={[0, 2.5, 0]}
-          fontSize={0.3}
-          color="white"
-          anchorX="center"
-        >
+      <Billboard position={[0, 2.1, 0]}>
+        <mesh>
+          <RoundedBox
+            args={[1, 0.3, 0.1]}
+            radius={0.06}
+            steps={1}
+            smoothness={4}
+            bevelSegments={4}
+            creaseAngle={0.4}
+          >
+            <meshBasicMaterial color="#000000" transparent opacity={0.3} />
+          </RoundedBox>
+        </mesh>
+        <Text fontSize={0.2} color={player.color} anchorX="center">
           {player.username}
         </Text>
       </Billboard>
