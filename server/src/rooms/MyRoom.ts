@@ -41,6 +41,18 @@ export class MyRoom extends Room<MyRoomState> {
         // Colyseus automatically synchronizes changes to schema properties
       }
     });
+
+    this.onMessage("chat", (client, message: { text: string }) => {
+      const player = this.state.players.get(client.sessionId);
+      const chatPayload = {
+        id: client.sessionId,
+        name: player.username,
+        text: message.text,
+      };
+
+      // Broadcast to all clients
+      this.broadcast("chat", chatPayload);
+    });
   }
 
   onJoin(

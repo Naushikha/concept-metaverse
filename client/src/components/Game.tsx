@@ -8,6 +8,7 @@ import { usePointerLock } from "./usePointerLock";
 import { PlayerModelMale } from "./PlayerModelMale";
 import { PlayerModelFemale } from "./PlayerModelFemale";
 import { Map } from "./Map";
+import { ChatBox } from "./ChatBox";
 
 declare global {
   interface Window {
@@ -218,24 +219,27 @@ function Game() {
   }, []);
 
   return (
-    <Canvas ref={canvasRef} camera={{ position: [0, 5, 10], fov: 60 }}>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      {room && <MyPlayerController room={room} />}
-      {Object.values(players)
-        .filter((p) => p.id !== myId)
-        .map((p) => (
-          <Player key={p.id} player={p} />
-        ))}
-      <gridHelper args={[100, 100]} />
-      <Map />
-      {myId && players[myId] && (
-        <ThirdPersonCamera
-          playerPos={players[myId].position}
-          playerRotY={players[myId].rotationY}
-        />
-      )}
-    </Canvas>
+    <>
+      <ChatBox room={room} />
+      <Canvas ref={canvasRef} camera={{ position: [0, 5, 10], fov: 60 }}>
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[10, 10, 5]} intensity={1} />
+        {room && <MyPlayerController room={room} />}
+        {Object.values(players)
+          .filter((p) => p.id !== myId)
+          .map((p) => (
+            <Player key={p.id} player={p} />
+          ))}
+        <gridHelper args={[100, 100]} />
+        <Map />
+        {myId && players[myId] && (
+          <ThirdPersonCamera
+            playerPos={players[myId].position}
+            playerRotY={players[myId].rotationY}
+          />
+        )}
+      </Canvas>
+    </>
   );
 }
 
