@@ -1,32 +1,3 @@
-// import { Room, Client } from "@colyseus/core";
-// import { MyRoomState } from "./schema/MyRoomState";
-
-// export class MyRoom extends Room<MyRoomState> {
-//   maxClients = 4;
-//   state = new MyRoomState();
-
-//   onCreate (options: any) {
-//     this.onMessage("type", (client, message) => {
-//       //
-//       // handle "type" message
-//       //
-//     });
-//   }
-
-//   onJoin (client: Client, options: any) {
-//     console.log(client.sessionId, "joined!");
-//   }
-
-//   onLeave (client: Client, consented: boolean) {
-//     console.log(client.sessionId, "left!");
-//   }
-
-//   onDispose() {
-//     console.log("room", this.roomId, "disposing...");
-//   }
-
-// }
-
 import { Room, Client } from "colyseus";
 import { MyRoomState, Player } from "./schema/MyRoomState";
 
@@ -63,29 +34,27 @@ export class MyRoom extends Room<MyRoomState> {
       }
     });
 
-    // this.onMessage(
-    //   "playerJoined",
-    //   (client, data: { username: string; color: string }) => {
-    //     let player = this.state.players.get(client.sessionId);
-    //     if (player) {
-    //       player.username = data.username;
-    //       player.color = data.color;
-    //     } else {
-    //       console.warn(
-    //         `Player ${client.sessionId} sent playerJoined but not found.`
-    //       );
-    //     }
-    //   }
-    // );
+    this.onMessage("changeState", (client, data: { state: string }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) {
+        player.state = data.state;
+        // Colyseus automatically synchronizes changes to schema properties
+      }
+    });
   }
 
-  onJoin(client: Client, options: { username: string; color: string }) {
+  onJoin(
+    client: Client,
+    options: { username: string; color: string; skin?: string }
+  ) {
     console.log(`${options.username} [id:${client.sessionId}] joined!`);
 
     const player = new Player();
     player.id = client.sessionId;
     player.username = options.username;
     player.color = options.color;
+    player.skin = options.skin ? options.skin : "default-male"; // Default skin, can be
+    player.state = "Idle"; // Initial state
     player.x = Math.random() * 5 - 2.5; // Initial random position
     player.y = 0; // Ground level
     player.z = Math.random() * 5 - 2.5;

@@ -5,6 +5,8 @@ import { useGameStore, type Player } from "../utils/store";
 import * as THREE from "three";
 import ThirdPersonCamera from "./ThirdPersonCamera";
 import { usePointerLock } from "./usePointerLock";
+import { PlayerModelMale } from "./PlayerModelMale";
+import { PlayerModelFemale } from "./PlayerModelFemale";
 
 declare global {
   interface Window {
@@ -38,7 +40,7 @@ function Player({ player }: { player: Player }) {
 
   return (
     <group ref={groupRef}>
-      <mesh>
+      {/* <mesh>
         <cylinderGeometry args={[0.5, 0.5, 2]} />
         <meshStandardMaterial color={player.color} />
       </mesh>
@@ -49,7 +51,14 @@ function Player({ player }: { player: Player }) {
       <mesh position={[0, 1.1, 0.5]}>
         <boxGeometry args={[0.5, 0.2, 0.2]} />
         <meshStandardMaterial color="white" />
-      </mesh>
+      </mesh> */}
+      {player.skin === "default-male" && (
+        <PlayerModelMale actionName={player.state} topColor={player.color} />
+      )}
+      {player.skin === "default-female" && (
+        <PlayerModelFemale actionName={player.state} topColor={player.color} />
+      )}
+
       <Billboard>
         <Text
           position={[0, 2.5, 0]}
@@ -120,7 +129,8 @@ function MyPlayerController({ room }: { room: any }) {
         z: newPos[2],
         rotationY,
       });
-    }
+      room.send("changeState", { state: "Running" });
+    } else room.send("changeState", { state: "Idle" });
   });
 
   if (!players[myId]) return null;

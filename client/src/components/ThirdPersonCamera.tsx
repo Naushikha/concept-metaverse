@@ -44,7 +44,8 @@ export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
     smoothedPlayerPos.current.lerp(new THREE.Vector3(...playerPos), 0.1);
 
     const target = smoothedPlayerPos.current.clone();
-    const distance = 6;
+    target.y += 0.9; // Adjust height of the target position
+    const distance = 3;
     const height = 0;
 
     const horizontalOffset = new THREE.Vector3(

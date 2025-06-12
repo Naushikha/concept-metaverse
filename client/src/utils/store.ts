@@ -6,6 +6,8 @@ export interface Player {
   id: string;
   username: string;
   color: string;
+  state: string; // e.g., "Idle", "Running", "Jumping"
+  skin: string;
   position: [number, number, number];
   rotationY: number;
 }

@@ -6,9 +6,10 @@ function App() {
   const [joined, setJoined] = useState(false);
   const [username, setUsername] = useState("");
   const [color, setColor] = useState("#00ff00");
+  const [skin, setSkin] = useState("default-male");
 
   const joinRoom = async () => {
-    await connectToRoom(username, color);
+    await connectToRoom(username, color, skin);
     setJoined(true);
   };
 
@@ -28,6 +29,14 @@ function App() {
         style={{ width: "100px", height: "40px" }}
         onChange={(e) => setColor(e.target.value)}
       />
+      <select
+        onChange={(e) => setSkin(e.target.value)}
+        value={skin}
+        style={{ width: "100px", height: "40px" }}
+      >
+        <option value="default-male">Default Male</option>
+        <option value="default-female">Default Female</option>
+      </select>
       <button onClick={joinRoom}>Join</button>
     </div>
   );

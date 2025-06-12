@@ -3,10 +3,15 @@ import { useGameStore } from "./store";
 
 export const client = new Client("ws://localhost:2567");
 
-export async function connectToRoom(username: string, color: string) {
+export async function connectToRoom(
+  username: string,
+  color: string,
+  skin: string
+) {
   const room: Room = await client.joinOrCreate<Room>("my_room", {
     username,
     color,
+    skin,
   });
   const setRoom = useGameStore.getState().setRoom;
   setRoom(room);
@@ -25,6 +30,8 @@ export async function connectToRoom(username: string, color: string) {
         id: sessionId,
         username: player.username,
         color: player.color,
+        skin: player.skin,
+        state: player.state,
         position: [player.x, player.y, player.z],
         rotationY: player.rotationY,
       },
@@ -38,6 +45,8 @@ export async function connectToRoom(username: string, color: string) {
           id: sessionId,
           username: player.username,
           color: player.color,
+          skin: player.skin,
+          state: player.state,
           position: [player.x, player.y, player.z],
           rotationY: player.rotationY,
         },
