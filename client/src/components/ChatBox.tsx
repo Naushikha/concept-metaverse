@@ -33,6 +33,12 @@ export function ChatBox({ room }: { room: Room }) {
     if (e.key === "Enter") sendMessage();
   };
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   return (
     <div
       style={{
@@ -60,13 +66,18 @@ export function ChatBox({ room }: { room: Room }) {
         {messages.map((msg, i) => (
           <div key={i}>
             <strong
-              style={{ color: useGameStore.getState().players[msg.id].color }}
+              style={{
+                color: useGameStore.getState().players[msg.id]
+                  ? useGameStore.getState().players[msg.id].color
+                  : "darkgray",
+              }}
             >
               {msg.name}:
             </strong>{" "}
             {msg.text}
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       <input
         ref={inputRef}

@@ -86,10 +86,13 @@ function MyPlayerController({ room }: { room: any }) {
   const vel = useRef(new THREE.Vector3());
   var travelDirection = useRef(""); // , W, A, S, D
   //  = no direction, W = forward, A = left, S = backward, D = right
+  const emoting = useRef(false);
+  const handledKeys = useRef(new Set<string>());
 
   // Mouse rotation
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      if (emoting.current) return;
       setRotationY((prev) => {
         const newRot = prev - e.movementX * 0.002;
         room.send("rotate", { rotationY: newRot });
@@ -153,7 +156,27 @@ function MyPlayerController({ room }: { room: any }) {
         rotationY,
       });
       room.send("changeState", { state: "Running" });
-    } else room.send("changeState", { state: "Idle" });
+      emoting.current = false;
+    } else {
+      if (keys["e"] && !handledKeys.current.has("e")) {
+        handledKeys.current.add("e");
+        room.send("changeState", { state: "Dancing" });
+        room.send("chat", { text: "Look at me dance! 🎵🎶" });
+        emoting.current = true;
+      }
+
+      if (keys["q"] && !handledKeys.current.has("q")) {
+        handledKeys.current.add("q");
+        room.send("changeState", { state: "Waving" });
+        room.send("chat", { text: "Hey there! 👋" });
+        emoting.current = true;
+      }
+      !emoting.current && room.send("changeState", { state: "Idle" });
+    }
+
+    // Clean up when key is released
+    if (!keys["e"]) handledKeys.current.delete("e");
+    if (!keys["q"]) handledKeys.current.delete("q");
   });
 
   if (!players[myId]) return null;
