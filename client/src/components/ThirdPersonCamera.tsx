@@ -69,7 +69,7 @@ export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
 
     const desiredPosition = target.clone().add(totalOffset);
 
-    camera.position.lerp(desiredPosition, 0.1);
+    camera.position.lerp(desiredPosition, 0.03);
     camera.lookAt(target);
   });
 

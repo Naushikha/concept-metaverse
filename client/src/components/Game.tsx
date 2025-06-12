@@ -7,6 +7,7 @@ import ThirdPersonCamera from "./ThirdPersonCamera";
 import { usePointerLock } from "./usePointerLock";
 import { PlayerModelMale } from "./PlayerModelMale";
 import { PlayerModelFemale } from "./PlayerModelFemale";
+import { Map } from "./Map";
 
 declare global {
   interface Window {
@@ -73,6 +74,7 @@ function Player({ player }: { player: Player }) {
   );
 }
 
+// TODO: Rewrite this shitty ass player controller
 function MyPlayerController({ room }: { room: any }) {
   const myId = useGameStore((s) => s.myId);
   const players = useGameStore((s) => s.players);
@@ -86,6 +88,8 @@ function MyPlayerController({ room }: { room: any }) {
   const [rotationY, setRotationY] = useState(initialPlayer.rotationY || 0);
 
   const vel = useRef(new THREE.Vector3());
+  var travelDirection = useRef(""); // , W, A, S, D
+  //  = no direction, W = forward, A = left, S = backward, D = right
 
   // Mouse rotation
   useEffect(() => {
@@ -107,9 +111,32 @@ function MyPlayerController({ room }: { room: any }) {
     const moveVec = new THREE.Vector3();
 
     if (keys["w"]) moveVec.z += 1;
-    if (keys["s"]) moveVec.z -= 1;
-    if (keys["a"]) moveVec.x += 1;
-    if (keys["d"]) moveVec.x -= 1;
+    if (keys["s"]) moveVec.z += 1;
+    if (keys["a"]) moveVec.z += 1;
+    if (keys["d"]) moveVec.z += 1;
+
+    if (keys["w"] || keys["d"] || keys["s"] || keys["a"]) {
+      let newTravelDirection = "";
+      if (keys["w"]) newTravelDirection += "W";
+      if (keys["d"]) newTravelDirection += "D";
+      if (keys["s"]) newTravelDirection += "S";
+      if (keys["a"]) newTravelDirection += "A";
+
+      if (newTravelDirection !== travelDirection.current) {
+        // Rotate ONCE in the intended direction
+        setRotationY((prevRot) => {
+          return prevRot + getMovementAngle(keys);
+        });
+        travelDirection.current = newTravelDirection;
+      } else if (keys["d"] || keys["a"])
+        setRotationY((prevRot) => {
+          return prevRot + getMovementAngle(keys) * 1 * delta;
+        });
+    }
+
+    if (!keys["w"] && !keys["s"] && !keys["a"] && !keys["d"]) {
+      travelDirection.current = "";
+    }
 
     // Normalize and rotate moveVec based on player rotation
     if (moveVec.lengthSq() > 0) {
@@ -146,6 +173,29 @@ function MyPlayerController({ room }: { room: any }) {
   );
 }
 
+function getMovementAngle(keys: Record<string, boolean>): number {
+  const up = keys["w"];
+  const down = keys["s"];
+  const left = keys["a"];
+  const right = keys["d"];
+
+  // No movement
+  if (!up && !down && !left && !right) return 0;
+
+  let angle = 0;
+
+  if (up && right) angle = -Math.PI / 4; // 45° (top-right)
+  else if (up && left) angle = Math.PI / 4; // 135° (top-left)
+  else if (down && right) angle = (-3 * Math.PI) / 4; // -135° (bottom-right)
+  else if (down && left) angle = (3 * Math.PI) / 4; // 135° (bottom-left)
+  else if (up) angle = 0; // 0° (forward)
+  else if (down) angle = Math.PI; // 180° (backward)
+  else if (right) angle = -Math.PI / 2; // -90° (right)
+  else if (left) angle = Math.PI / 2; // 90° (left)
+
+  return angle;
+}
+
 function Game() {
   const players = useGameStore((s) => s.players);
   const room = useGameStore((s) => s.room);
@@ -178,6 +228,7 @@ function Game() {
           <Player key={p.id} player={p} />
         ))}
       <gridHelper args={[100, 100]} />
+      <Map />
       {myId && players[myId] && (
         <ThirdPersonCamera
           playerPos={players[myId].position}
