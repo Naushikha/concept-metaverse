@@ -5,12 +5,18 @@ import * as THREE from "three";
 type Props = {
   playerPos: [number, number, number];
   playerRotY: number;
+  freeOrbit?: boolean; // ← new prop
 };
 
-export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
+export default function ThirdPersonCamera({
+  playerPos,
+  playerRotY,
+  freeOrbit = false,
+}: Props) {
   const { camera } = useThree();
 
   const pitchRef = useRef(0); // vertical angle
+  const yawRef = useRef(playerRotY); // horizontal angle for orbit mode
   const isPointerLocked = useRef(false);
 
   const smoothedPlayerPos = useRef(new THREE.Vector3(...playerPos)); // ← internal smoothed position
@@ -19,7 +25,10 @@ export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isPointerLocked.current) return;
 
+      yawRef.current -= e.movementX * 0.002;
       pitchRef.current += e.movementY * 0.002;
+
+      // Clamp vertical pitch
       pitchRef.current = Math.max(0.2, Math.min(Math.PI / 3, pitchRef.current));
     };
 
@@ -37,7 +46,7 @@ export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
         handlePointerLockChange
       );
     };
-  }, []);
+  }, [freeOrbit]);
 
   useFrame(() => {
     // Smooth the player's position (interpolate towards new target)
@@ -48,11 +57,17 @@ export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
     const distance = 3;
     const height = 0;
 
+    // Use either free orbit angles or follow the player
+    const yaw = freeOrbit ? yawRef.current : playerRotY;
+
+    const zoomFactor = Math.cos(pitchRef.current);
+
+    // Horizontal orbit offset
     const horizontalOffset = new THREE.Vector3(
-      Math.sin(playerRotY) * -distance,
+      Math.sin(yaw) * -distance,
       0,
-      Math.cos(playerRotY) * -distance
-    );
+      Math.cos(yaw) * -distance
+    ).multiplyScalar(zoomFactor);
 
     const verticalOffset = new THREE.Vector3(
       0,
@@ -60,10 +75,7 @@ export default function ThirdPersonCamera({ playerPos, playerRotY }: Props) {
       0
     );
 
-    const zoomFactor = Math.cos(pitchRef.current);
-
     const totalOffset = horizontalOffset
-      .multiplyScalar(zoomFactor)
       .add(verticalOffset)
       .add(new THREE.Vector3(0, height, 0));
 

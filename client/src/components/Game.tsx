@@ -252,6 +252,10 @@ function Game() {
         <Map />
         {myId && players[myId] && (
           <ThirdPersonCamera
+            freeOrbit={
+              players[myId].state === "Dancing" ||
+              players[myId].state === "Waving"
+            }
             playerPos={players[myId].position}
             playerRotY={players[myId].rotationY}
           />
