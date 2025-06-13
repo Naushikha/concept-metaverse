@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useRapier } from "@react-three/rapier";
 
 type Props = {
   playerPos: [number, number, number];
@@ -14,6 +15,7 @@ export default function ThirdPersonCamera({
   freeOrbit = false,
 }: Props) {
   const { camera } = useThree();
+  const { rapier, world } = useRapier();
 
   const pitchRef = useRef(0); // vertical angle
   const yawRef = useRef(playerRotY); // horizontal angle for orbit mode
@@ -53,7 +55,7 @@ export default function ThirdPersonCamera({
     smoothedPlayerPos.current.lerp(new THREE.Vector3(...playerPos), 0.1);
 
     const target = smoothedPlayerPos.current.clone();
-    target.y += 0.9; // Adjust height of the target position
+    target.y += 1.65; // eye level
     const distance = 3;
     const height = 0;
 
@@ -79,9 +81,25 @@ export default function ThirdPersonCamera({
       .add(verticalOffset)
       .add(new THREE.Vector3(0, height, 0));
 
-    const desiredPosition = target.clone().add(totalOffset);
+    const desiredCameraPos = target.clone().add(totalOffset);
 
-    camera.position.lerp(desiredPosition, 0.03);
+    // Raycast from target to desired camera position
+    const rayDir = desiredCameraPos.clone().sub(target).normalize();
+    const maxDist = distance;
+    const ray = new rapier.Ray(target, rayDir);
+
+    const hit = world.castRay(ray, maxDist, true);
+
+    const MIN_DISTANCE = 0.3; // Don't allow the camera closer than this
+    let finalCameraPos = desiredCameraPos;
+
+    if (hit && hit.timeOfImpact < distance) {
+      // If collision, place camera slightly before the hit point
+      const clampedTOI = Math.max(hit.timeOfImpact - 0.1, MIN_DISTANCE);
+      finalCameraPos = target.clone().add(rayDir.multiplyScalar(clampedTOI));
+    }
+
+    camera.position.lerp(finalCameraPos, 0.03);
     camera.lookAt(target);
   });
 

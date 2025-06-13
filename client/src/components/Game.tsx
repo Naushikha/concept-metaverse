@@ -10,6 +10,7 @@ import { PlayerModelFemale } from "./PlayerModels/DefaultFemale";
 import { Map } from "./Map";
 import { ChatBox } from "./ChatBox";
 import { PlayerModelSpiderman } from "./PlayerModels/Spiderman";
+import { Physics, RigidBody } from "@react-three/rapier";
 
 declare global {
   interface Window {
@@ -247,26 +248,28 @@ function Game() {
     <>
       <ChatBox room={room} />
       <Canvas ref={canvasRef} camera={{ position: [0, 5, 10], fov: 60 }}>
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
-        {room && <MyPlayerController room={room} />}
-        {Object.values(players)
-          .filter((p) => p.id !== myId)
-          .map((p) => (
-            <Player key={p.id} player={p} />
-          ))}
-        <gridHelper args={[100, 100]} />
-        <Map />
-        {myId && players[myId] && (
-          <ThirdPersonCamera
-            freeOrbit={
-              players[myId].state === "Dancing" ||
-              players[myId].state === "Waving"
-            }
-            playerPos={players[myId].position}
-            playerRotY={players[myId].rotationY}
-          />
-        )}
+        <Physics debug>
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} />
+          {room && <MyPlayerController room={room} />}
+          {Object.values(players)
+            .filter((p) => p.id !== myId)
+            .map((p) => (
+              <Player key={p.id} player={p} />
+            ))}
+          <gridHelper args={[100, 100]} />
+          <Map />
+          {myId && players[myId] && (
+            <ThirdPersonCamera
+              freeOrbit={
+                players[myId].state === "Dancing" ||
+                players[myId].state === "Waving"
+              }
+              playerPos={players[myId].position}
+              playerRotY={players[myId].rotationY}
+            />
+          )}
+        </Physics>
       </Canvas>
     </>
   );
