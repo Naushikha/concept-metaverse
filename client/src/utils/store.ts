@@ -1,4 +1,5 @@
 // client/src/store.ts
+import type { RapierRigidBody } from "@react-three/rapier";
 import type { Room } from "colyseus.js";
 import { create } from "zustand";
 
@@ -29,3 +30,9 @@ export const useGameStore = create<GameState>((set) => ({
   updatePlayers: (players) => set({ players }),
   setRoom: (room) => set({ room }),
 }));
+
+export var playerRigidBody: RapierRigidBody | undefined = undefined; // Reference to the player's rigid body
+
+export const setPlayerRigidBody = (body: RapierRigidBody) => {
+  playerRigidBody = body;
+};

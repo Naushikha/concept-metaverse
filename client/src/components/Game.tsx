@@ -1,7 +1,12 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Billboard, RoundedBox, Text } from "@react-three/drei";
 import { useEffect, useRef, useState } from "react";
-import { useGameStore, type Player } from "../utils/store";
+import {
+  playerRigidBody,
+  setPlayerRigidBody,
+  useGameStore,
+  type Player,
+} from "../utils/store";
 import * as THREE from "three";
 import ThirdPersonCamera from "./ThirdPersonCamera";
 import { usePointerLock } from "./usePointerLock";
@@ -10,7 +15,12 @@ import { PlayerModelFemale } from "./PlayerModels/DefaultFemale";
 import { Map } from "./Map";
 import { ChatBox } from "./ChatBox";
 import { PlayerModelSpiderman } from "./PlayerModels/Spiderman";
-import { Physics, RigidBody } from "@react-three/rapier";
+import {
+  CapsuleCollider,
+  Physics,
+  RapierRigidBody,
+  RigidBody,
+} from "@react-three/rapier";
 
 declare global {
   interface Window {
@@ -18,7 +28,13 @@ declare global {
   }
 }
 
-function Player({ player }: { player: Player }) {
+function Player({
+  player,
+  physicsControlled = false,
+}: {
+  player: Player;
+  physicsControlled?: boolean;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const targetPosition = useRef(new THREE.Vector3(...player.position));
   const displayedPosition = useRef(new THREE.Vector3(...player.position));
@@ -33,9 +49,10 @@ function Player({ player }: { player: Player }) {
   useFrame(() => {
     if (groupRef.current) {
       // Interpolate position
-      displayedPosition.current.lerp(targetPosition.current, 0.1);
-      groupRef.current.position.copy(displayedPosition.current);
-
+      if (!physicsControlled) {
+        displayedPosition.current.lerp(targetPosition.current, 0.1);
+        groupRef.current.position.copy(displayedPosition.current);
+      }
       // Smooth rotation (optional)
       groupRef.current.rotation.y +=
         (currentRotationY.current - groupRef.current.rotation.y) * 0.1;
@@ -80,15 +97,12 @@ function Player({ player }: { player: Player }) {
 
 // TODO: Rewrite this shitty ass player controller
 function MyPlayerController({ room }: { room: any }) {
+  const playerBodyRef = useRef<RapierRigidBody>(null);
+
   const myId = useGameStore((s) => s.myId);
   const players = useGameStore((s) => s.players);
   const initialPlayer = players[myId];
 
-  const [pos, setPos] = useState<[number, number, number]>([
-    initialPlayer.position[0],
-    initialPlayer.position[1],
-    initialPlayer.position[2],
-  ]);
   const [rotationY, setRotationY] = useState(initialPlayer.rotationY || 0);
 
   const vel = useRef(new THREE.Vector3());
@@ -112,9 +126,13 @@ function MyPlayerController({ room }: { room: any }) {
     return () => document.removeEventListener("mousemove", handleMouseMove);
   }, [room]);
 
+  const moveSpeed = 4;
   useFrame((_, delta) => {
+    const body = playerBodyRef.current;
+    if (!body) return;
+    if (!playerRigidBody) setPlayerRigidBody(body); // Use from camera controls
+    const bodyPos = body.translation();
     const keys = window.keyState || {};
-    const moveSpeed = 5;
     const moveVec = new THREE.Vector3();
 
     if (keys["w"]) moveVec.z += 1;
@@ -145,24 +163,14 @@ function MyPlayerController({ room }: { room: any }) {
       travelDirection.current = "";
     }
 
+    const isMoving = moveVec.lengthSq() > 0;
+
     // Normalize and rotate moveVec based on player rotation
-    if (moveVec.lengthSq() > 0) {
+    if (isMoving) {
       moveVec.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
       vel.current.copy(moveVec).multiplyScalar(moveSpeed * delta);
-
-      const newPos = [
-        pos[0] + vel.current.x,
-        pos[1],
-        pos[2] + vel.current.z,
-      ] as [number, number, number];
-
-      setPos(newPos);
-      room.send("move", {
-        x: newPos[0],
-        y: newPos[1],
-        z: newPos[2],
-        rotationY,
-      });
+      const velocity = moveVec.multiplyScalar(moveSpeed);
+      body.setLinvel({ x: velocity.x, y: 0, z: velocity.z }, true);
       room.send("changeState", { state: "Running" });
       emoting.current = false;
     } else {
@@ -182,6 +190,14 @@ function MyPlayerController({ room }: { room: any }) {
       !emoting.current && room.send("changeState", { state: "Idle" });
     }
 
+    // TODO: Make this efficient; this is called every frame
+    room.send("move", {
+      x: bodyPos.x,
+      y: bodyPos.y,
+      z: bodyPos.z,
+      rotationY,
+    });
+
     // Clean up when key is released
     if (!keys["e"]) handledKeys.current.delete("e");
     if (!keys["q"]) handledKeys.current.delete("q");
@@ -190,13 +206,24 @@ function MyPlayerController({ room }: { room: any }) {
   if (!players[myId]) return null;
 
   return (
-    <Player
-      player={{
-        ...players[myId],
-        position: pos,
-        rotationY,
-      }}
-    />
+    <>
+      <RigidBody
+        ref={playerBodyRef}
+        type="dynamic"
+        enabledRotations={[false, false, false]}
+        colliders={false}
+      >
+        <CapsuleCollider args={[0.6, 0.4]} position={[0, 1, 0]} />
+        <Player
+          player={{
+            ...players[myId],
+            position: [0, 0, 0], // position will be updated by physics
+            rotationY,
+          }}
+          physicsControlled={true}
+        />
+      </RigidBody>
+    </>
   );
 }
 

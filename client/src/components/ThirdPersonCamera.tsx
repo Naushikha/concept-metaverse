@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
+import { playerRigidBody } from "../utils/store";
 
 type Props = {
   playerPos: [number, number, number];
@@ -88,7 +89,15 @@ export default function ThirdPersonCamera({
     const maxDist = distance;
     const ray = new rapier.Ray(target, rayDir);
 
-    const hit = world.castRay(ray, maxDist, true);
+    const hit = world.castRay(
+      ray,
+      maxDist,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      playerRigidBody
+    );
 
     const MIN_DISTANCE = 0.3; // Don't allow the camera closer than this
     let finalCameraPos = desiredCameraPos;

@@ -68,7 +68,7 @@ export class MyRoom extends Room<MyRoomState> {
     player.skin = options.skin ? options.skin : "default-male"; // Default skin, can be
     player.state = "Idle"; // Initial state
     player.x = Math.random() * 5 - 2.5; // Initial random position
-    player.y = 0; // Ground level
+    player.y = 0.3; // Slightly above ground level
     player.z = Math.random() * 5 - 2.5;
     player.rotationY = 0;
 
