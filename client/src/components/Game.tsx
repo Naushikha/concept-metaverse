@@ -5,10 +5,11 @@ import { useGameStore, type Player } from "../utils/store";
 import * as THREE from "three";
 import ThirdPersonCamera from "./ThirdPersonCamera";
 import { usePointerLock } from "./usePointerLock";
-import { PlayerModelMale } from "./PlayerModelMale";
-import { PlayerModelFemale } from "./PlayerModelFemale";
+import { PlayerModelMale } from "./PlayerModels/DefaultMale";
+import { PlayerModelFemale } from "./PlayerModels/DefaultFemale";
 import { Map } from "./Map";
 import { ChatBox } from "./ChatBox";
+import { PlayerModelSpiderman } from "./PlayerModels/Spiderman";
 
 declare global {
   interface Window {
@@ -47,6 +48,12 @@ function Player({ player }: { player: Player }) {
       )}
       {player.skin === "default-female" && (
         <PlayerModelFemale actionName={player.state} topColor={player.color} />
+      )}
+      {player.skin === "spiderman" && (
+        <PlayerModelSpiderman
+          actionName={player.state}
+          topColor={player.color}
+        />
       )}
 
       <Billboard position={[0, 2.1, 0]}>

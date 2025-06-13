@@ -36,6 +36,7 @@ function App() {
       >
         <option value="default-male">Default Male</option>
         <option value="default-female">Default Female</option>
+        <option value="spiderman">Spiderman</option>
       </select>
       <button onClick={joinRoom}>Join</button>
     </div>

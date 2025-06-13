@@ -11,7 +11,7 @@ import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 //   | "Walking"
 //   | "Waving";
 
-interface PlayerModelMaleProps {
+interface PlayerModelFemaleProps {
   actionName: string;
   topColor?: string; // hex or css color
   position?: [number, number, number];
@@ -36,7 +36,7 @@ export function PlayerModelFemale({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   scale = 1,
-}: PlayerModelMaleProps) {
+}: PlayerModelFemaleProps) {
   const group = useRef<THREE.Group>(null!);
   const { gltfScene, gltfAnimations } = useMeshCloneForGLTF(
     "./models/asian_female_animated.glb"
