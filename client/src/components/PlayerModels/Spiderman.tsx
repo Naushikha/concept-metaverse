@@ -48,7 +48,15 @@ export function PlayerModelSpiderman({
     if (!actions || !actionName) return;
     Object.entries(actions).forEach(([name, action]) => {
       if (name === actionName) {
-        action && action.reset().fadeIn(0.2).play();
+        if (name === "Jump" && action) {
+          action.reset();
+          action.time = 0.5;
+          action.setEffectiveTimeScale(0.9);
+          action.play();
+        } else {
+          action?.setEffectiveTimeScale(1);
+          action && action.reset().fadeIn(0.2).play();
+        }
       } else {
         action && action.fadeOut(0.2);
       }

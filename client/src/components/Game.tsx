@@ -20,6 +20,7 @@ import {
   Physics,
   RapierRigidBody,
   RigidBody,
+  useRapier,
 } from "@react-three/rapier";
 
 declare global {
@@ -98,6 +99,7 @@ function Player({
 // TODO: Rewrite this shitty ass player controller
 function MyPlayerController({ room }: { room: any }) {
   const playerBodyRef = useRef<RapierRigidBody>(null);
+  const { rapier, world } = useRapier();
 
   const myId = useGameStore((s) => s.myId);
   const players = useGameStore((s) => s.players);
@@ -110,6 +112,8 @@ function MyPlayerController({ room }: { room: any }) {
   //  = no direction, W = forward, A = left, S = backward, D = right
   const emoting = useRef(false);
   const handledKeys = useRef(new Set<string>());
+
+  const canJump = useRef(true);
 
   // Mouse rotation
   useEffect(() => {
@@ -127,6 +131,7 @@ function MyPlayerController({ room }: { room: any }) {
   }, [room]);
 
   const moveSpeed = 4;
+  const jumpPower = 4;
   useFrame((_, delta) => {
     const body = playerBodyRef.current;
     if (!body) return;
@@ -163,14 +168,33 @@ function MyPlayerController({ room }: { room: any }) {
       travelDirection.current = "";
     }
 
+    const origin = body.translation();
+    const ray = new rapier.Ray(origin, { x: 0, y: -1, z: 0 });
+    const hit = world.castRay(ray, 0.2, true);
+
+    const isGrounded = !!hit;
+
+    if (keys[" "] && isGrounded && canJump.current) {
+      room.send("changeState", { state: "Jump" });
+      body.applyImpulse({ x: 0, y: jumpPower, z: 0 }, true);
+      canJump.current = false;
+
+      setTimeout(() => {
+        canJump.current = true;
+      }, 1000); // 150ms cooldown
+    }
+
     const isMoving = moveVec.lengthSq() > 0;
 
     // Normalize and rotate moveVec based on player rotation
-    if (isMoving) {
+    if (isMoving && canJump.current) {
       moveVec.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
       vel.current.copy(moveVec).multiplyScalar(moveSpeed * delta);
       const velocity = moveVec.multiplyScalar(moveSpeed);
-      body.setLinvel({ x: velocity.x, y: 0, z: velocity.z }, true);
+      body.setLinvel(
+        { x: velocity.x, y: body.linvel().y, z: velocity.z },
+        true
+      );
       room.send("changeState", { state: "Running" });
       emoting.current = false;
     } else {
@@ -187,7 +211,9 @@ function MyPlayerController({ room }: { room: any }) {
         room.send("chat", { text: "Hey there! 👋" });
         emoting.current = true;
       }
-      !emoting.current && room.send("changeState", { state: "Idle" });
+      !emoting.current &&
+        canJump.current &&
+        room.send("changeState", { state: "Idle" });
     }
 
     // TODO: Make this efficient; this is called every frame
