@@ -20,15 +20,28 @@ interface GameState {
   setMyId: (id: string) => void;
   updatePlayers: (players: Record<string, Player>) => void;
   setRoom: (room: Room) => void;
+  setMyPlayerState: (state: string) => void;
 }
 
-export const useGameStore = create<GameState>((set) => ({
+export const useGameStore = create<GameState>((set, get) => ({
   myId: "",
   room: null as unknown as Room,
   players: {},
   setMyId: (id) => set({ myId: id }),
   updatePlayers: (players) => set({ players }),
   setRoom: (room) => set({ room }),
+  setMyPlayerState: (newState: string) => {
+    const { myId, players } = get();
+    if (!myId || !players[myId]) return;
+    const updatedPlayers = {
+      ...players,
+      [myId]: {
+        ...players[myId],
+        state: newState,
+      },
+    };
+    set({ players: updatedPlayers });
+  },
 }));
 
 export var playerRigidBody: RapierRigidBody | undefined = undefined; // Reference to the player's rigid body

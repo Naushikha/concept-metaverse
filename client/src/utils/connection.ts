@@ -39,14 +39,17 @@ export async function connectToRoom(
 
     // Listen for changes to the player object
     $(player).onChange(() => {
+      const isSelf = sessionId === room.sessionId;
+      const currentPlayers = useGameStore.getState().players;
+
       updatePlayers({
-        ...useGameStore.getState().players,
+        ...currentPlayers,
         [sessionId]: {
           id: sessionId,
           username: player.username,
           color: player.color,
           skin: player.skin,
-          state: player.state,
+          state: isSelf ? currentPlayers[sessionId]?.state : player.state,
           position: [player.x, player.y, player.z],
           rotationY: player.rotationY,
         },

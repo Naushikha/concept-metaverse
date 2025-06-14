@@ -115,6 +115,13 @@ function MyPlayerController({ room }: { room: any }) {
 
   const canJump = useRef(true);
 
+  const gsSetMyPlayerState = useGameStore.getState().setMyPlayerState;
+  const setMyPlayerState = (state: string) => {
+    if (state == useGameStore.getState().players[myId].state) return;
+    gsSetMyPlayerState(state); // immediately change my state for user to see
+    room.send("changeState", { state: state });
+  };
+
   // Mouse rotation
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -175,7 +182,7 @@ function MyPlayerController({ room }: { room: any }) {
     const isGrounded = !!hit;
 
     if (keys[" "] && isGrounded && canJump.current) {
-      room.send("changeState", { state: "Jump" });
+      setMyPlayerState("Jump");
       body.applyImpulse({ x: 0, y: jumpPower, z: 0 }, true);
       canJump.current = false;
 
@@ -195,25 +202,23 @@ function MyPlayerController({ room }: { room: any }) {
         { x: velocity.x, y: body.linvel().y, z: velocity.z },
         true
       );
-      room.send("changeState", { state: "Running" });
+      setMyPlayerState("Running");
       emoting.current = false;
     } else {
       if (keys["e"] && !handledKeys.current.has("e")) {
         handledKeys.current.add("e");
-        room.send("changeState", { state: "Dancing" });
+        setMyPlayerState("Dancing");
         room.send("chat", { text: "Look at me dance! 🎵🎶" });
         emoting.current = true;
       }
 
       if (keys["q"] && !handledKeys.current.has("q")) {
         handledKeys.current.add("q");
-        room.send("changeState", { state: "Waving" });
+        setMyPlayerState("Waving");
         room.send("chat", { text: "Hey there! 👋" });
         emoting.current = true;
       }
-      !emoting.current &&
-        canJump.current &&
-        room.send("changeState", { state: "Idle" });
+      !emoting.current && canJump.current && setMyPlayerState("Idle");
     }
 
     // TODO: Make this efficient; this is called every frame
@@ -304,7 +309,6 @@ function Game() {
         <Physics debug>
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
-          {room && <MyPlayerController room={room} />}
           {Object.values(players)
             .filter((p) => p.id !== myId)
             .map((p) => (
@@ -312,15 +316,18 @@ function Game() {
             ))}
           <gridHelper args={[100, 100]} />
           <Map />
-          {myId && players[myId] && (
-            <ThirdPersonCamera
-              freeOrbit={
-                players[myId].state === "Dancing" ||
-                players[myId].state === "Waving"
-              }
-              playerPos={players[myId].position}
-              playerRotY={players[myId].rotationY}
-            />
+          {room && myId && players[myId] && (
+            <>
+              <MyPlayerController room={room} />
+              <ThirdPersonCamera
+                freeOrbit={
+                  players[myId].state === "Dancing" ||
+                  players[myId].state === "Waving"
+                }
+                playerPos={players[myId].position}
+                playerRotY={players[myId].rotationY}
+              />
+            </>
           )}
         </Physics>
       </Canvas>
