@@ -1,0 +1,22 @@
+services:
+  metaverse-api-dev:
+    # https://docs.portainer.io/advanced/access-control#resources-deployed-outside-of-portainer
+    # labels:
+    #   io.portainer.accesscontrol.teams: Developers
+    build:
+      context: ./infra
+      dockerfile: Dockerfile
+    container_name: metaverse-api-dev
+    restart: always
+    ports:
+      - "6567:2567"
+    volumes:
+      - .:/app:ro
+      - metaverse-api-dev:/app/node_modules
+      - metaverse-pnpm-dev:/pnpm
+
+volumes:
+  metaverse-api-dev:
+    name: metaverse-api-dev
+  metaverse-pnpm-dev:
+    name: metaverse-pnpm-dev
