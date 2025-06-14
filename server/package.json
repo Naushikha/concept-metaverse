@@ -39,6 +39,7 @@
     "@colyseus/schema": "^3.0.39",
     "@colyseus/tools": "^0.16.0",
     "colyseus": "^0.16.0",
-    "express": "^4.18.2"
+    "express": "^5.1.0",
+    "http": "0.0.1-security"
   }
 }
